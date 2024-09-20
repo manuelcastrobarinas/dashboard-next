@@ -1,31 +1,42 @@
-import { Pokemon } from "@/pokemons";
+import { Pokemon, PokemonsResponse } from "@/pokemons";
 import { Metadata } from "next";
 import Image from 'next/image';
 import { notFound } from "next/navigation";
 
 interface Args {
-  params: { id: string };
+  params: { name: string };
 }
 
 export async function generateMetadata({params}: Args) : Promise<Metadata> {
   try {
-    const { name } = await getPokemon(params.id);
     return {
-      title: `${name}`,
-      description:`pagina del pokemon ${name}`
+      title:`nombre: ${params.name}`,
+      description:`pagina del pokemon en ${params.name}`
     }
   } catch (error) {
     return {
-      title: `Error pokemon`,
-      description:`la pagina del pokemon no se ha podido cargar`
+      title:'Error pok',
+      description:`La pagina del pokemon no se ha podido cargar`
     }
   }
 }
 
-const getPokemon = async (id:string):Promise<Pokemon> => {
+export async function generateStaticParams() {
+  const data:PokemonsResponse = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=151`).then(res => res.json());
+ 
+  const staticPokemons = data.results.map(pokemon => ({
+     name: pokemon.name
+  }));
+
+  return staticPokemons.map( ({name}) => ({
+    name:name
+  }));
+}
+
+
+const getPokemon = async (name:string):Promise<Pokemon> => {
   try {   
-    const pokemon:Pokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`, {
-      // cache: 'force-cache', //TODO: CAMBIAR ESTO EN UN FUTURO
+    const pokemon:Pokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`, {
       next: {
         revalidate: 60
       }
@@ -37,7 +48,7 @@ const getPokemon = async (id:string):Promise<Pokemon> => {
 }
 
 export default async function PokemonPage({params}: Args) {
-  const pokemon = await getPokemon(params.id);
+  const pokemon = await getPokemon(params.name);
   return (
     <div className="flex mt-5 flex-col items-center text-slate-800">
       <div className="relative flex flex-col items-center rounded-[20px] w-[700px] mx-auto bg-white bg-clip-border  shadow-lg  p-3">
